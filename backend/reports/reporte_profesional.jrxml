@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Plantilla JasperReports para Mente Sana AQP
+  Reporte estadístico profesional de salud mental universitaria
+  Generado automáticamente desde el endpoint /admin/reportes/profesionales/pdf
+-->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="reporte_profesional"
+              pageWidth="595" pageHeight="842"
+              columnWidth="555" leftMargin="20" rightMargin="20"
+              topMargin="20" bottomMargin="20"
+              uuid="a1b2c3d4-e5f6-7890-abcd-ef1234567890">
+
+    <!-- ============================================================
+         ESTILOS
+         ============================================================ -->
+    <style name="TituloPrincipal" fontName="Helvetica" fontSize="22" isBold="true" pdfFontName="Helvetica-Bold" foreColor="#1B4F72"/>
+    <style name="Subtitulo" fontName="Helvetica" fontSize="14" isBold="true" pdfFontName="Helvetica-Bold" foreColor="#2C6B9E"/>
+    <style name="CabeceraTabla" fontName="Helvetica" fontSize="10" isBold="true" pdfFontName="Helvetica-Bold" foreColor="#FFFFFF" backColor="#1B4F72"/>
+    <style name="CeldaNormal" fontName="Helvetica" fontSize="9" pdfFontName="Helvetica"/>
+    <style name="CeldaNumerica" fontName="Helvetica" fontSize="9" pdfFontName="Helvetica" hAlign="Right"/>
+    <style name="CeldaPorcentaje" fontName="Helvetica" fontSize="9" pdfFontName="Helvetica" hAlign="Right"/>
+    <style name="PiePagina" fontName="Helvetica" fontSize="8" pdfFontName="Helvetica" foreColor="#666666"/>
+    <style name="EtiquetaKPI" fontName="Helvetica" fontSize="10" isBold="true" pdfFontName="Helvetica-Bold" foreColor="#1B4F72"/>
+    <style name="ValorKPI" fontName="Helvetica" fontSize="24" isBold="true" pdfFontName="Helvetica-Bold" foreColor="#2C6B9E"/>
+    <style name="KPICard" backColor="#F0F4F8" border="Thin" borderColor="#CCCCCC"/>
+
+    <!-- ============================================================
+         PARÁMETROS (recibidos desde el JSON)
+         ============================================================ -->
+    <parameter name="estadisticas" class="java.util.Map"/>
+    <parameter name="por_facultad" class="java.util.List"/>
+    <parameter name="por_profesional" class="java.util.List"/>
+    <parameter name="generado_en" class="java.lang.String"/>
+    <parameter name="generado_por" class="java.lang.String"/>
+    <parameter name="logo_path" class="java.lang.String" isForPrompting="false">
+        <defaultValueExpression><![CDATA["repo:logo_mente_sana.png"]]></defaultValueExpression>

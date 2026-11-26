@@ -1,0 +1,23 @@
+
+# Entorno virtual Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Variables privadas
+.env
+.env.*
+!.env.example
+!.env.ejemplo
+
+# React y Node
+node_modules/
+dist/
+
+# Archivos temporales
+*.log
+.DS_Store
+Thumbs.db
+estructura.txt
