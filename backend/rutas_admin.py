@@ -2,10 +2,14 @@
 from datetime import datetime
 from typing import Optional
 import re
+from io import BytesIO
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import text
+from fastapi.responses import StreamingResponse
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
 
 from db import engine, registrar
 from casos import BASE_ALERTAS, ORDEN, formatear, resumen_estados
@@ -20,7 +24,7 @@ ROLES = ("ESTUDIANTE", "PROFESIONAL", "ADMINISTRADOR")
 ESTADOS_MODELO = ("CANDIDATA", "VIGENTE", "RECHAZADA", "RETIRADA")
 CORREO = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
-ETIQUETA_ROL = {
+ROL_POR_OPCION = {
     1: "ESTUDIANTE",
     2: "PROFESIONAL",
     3: "ADMINISTRADOR"
@@ -1088,10 +1092,18 @@ def crear_usuario(
     if not nombres or not apellidos:
         raise HTTPException(422, "Nombres y apellidos son obligatorios.")
 
-    if datos.rol_id not in (1, 2, 3):
+    nombre_rol = ROL_POR_OPCION.get(datos.rol_id)
+    if nombre_rol is None:
         raise HTTPException(422, "Rol no válido.")
 
     with engine.begin() as conn:
+        rol_id_db = conn.execute(
+            text("SELECT id FROM rol WHERE nombre = :nombre"),
+            {"nombre": nombre_rol}
+        ).scalar()
+        if rol_id_db is None:
+            raise HTTPException(409, "No está configurado el rol solicitado. Inicializa los datos base.")
+
         existe = conn.execute(
             text("SELECT id FROM usuario WHERE correo = :correo"),
             {"correo": correo}
@@ -1100,7 +1112,7 @@ def crear_usuario(
         if existe:
             raise HTTPException(409, "El correo ya está registrado.")
 
-        if datos.rol_id == 1:
+        if nombre_rol == "ESTUDIANTE":
             if not datos.facultad_id:
                 raise HTTPException(422, "Selecciona una facultad.")
 
@@ -1115,7 +1127,7 @@ def crear_usuario(
             if datos.ciclo is not None and not 1 <= datos.ciclo <= 12:
                 raise HTTPException(422, "El ciclo debe estar entre 1 y 12.")
 
-        if datos.rol_id == 2:
+        if nombre_rol == "PROFESIONAL":
             for facultad_id in (datos.facultades or []):
                 existe_facultad = conn.execute(
                     text("SELECT id FROM facultad WHERE id = :id"),
@@ -1135,7 +1147,7 @@ def crear_usuario(
                 )
             """),
             {
-                "rol": datos.rol_id,
+                "rol": rol_id_db,
                 "correo": correo,
                 "clave": hash_clave(datos.contrasena),
                 "nombres": nombres,
@@ -1143,7 +1155,7 @@ def crear_usuario(
             }
         ).lastrowid
 
-        if datos.rol_id == 1:
+        if nombre_rol == "ESTUDIANTE":
             codigo = datos.codigo.strip() if datos.codigo else None
 
             if not codigo:
@@ -1170,7 +1182,7 @@ def crear_usuario(
                 }
             )
 
-        elif datos.rol_id == 2:
+        elif nombre_rol == "PROFESIONAL":
             profesional_id = conn.execute(
                 text("""
                     INSERT INTO profesional (
@@ -1223,9 +1235,10 @@ def editar_usuario(
     with engine.begin() as conn:
         usuario = conn.execute(
             text("""
-                SELECT id, rol_id
-                FROM usuario
-                WHERE id = :id
+                SELECT u.id, r.nombre AS rol
+                FROM usuario u
+                JOIN rol r ON r.id = u.rol_id
+                WHERE u.id = :id
             """),
             {"id": usuario_id}
         ).mappings().first()
@@ -1233,7 +1246,7 @@ def editar_usuario(
         if not usuario:
             raise HTTPException(404, "Usuario no encontrado.")
 
-        rol_id = usuario["rol_id"]
+        nombre_rol = usuario["rol"]
         campos = {}
 
         for campo in ("nombres", "apellidos"):
@@ -1262,7 +1275,7 @@ def editar_usuario(
                 {**campos, "id": usuario_id}
             )
 
-        if rol_id == 1:
+        if nombre_rol == "ESTUDIANTE":
             perfil = conn.execute(
                 text("SELECT id FROM estudiante WHERE usuario_id = :id"),
                 {"id": usuario_id}
@@ -1293,7 +1306,7 @@ def editar_usuario(
                         {**cambios, "id": usuario_id}
                     )
 
-        elif rol_id == 2:
+        elif nombre_rol == "PROFESIONAL":
             profesional = conn.execute(
                 text("SELECT id FROM profesional WHERE usuario_id = :id"),
                 {"id": usuario_id}
@@ -1391,14 +1404,25 @@ def crear_facultad(datos: dict, token: dict = Depends(solo_admin)):
         )
 
     with engine.begin() as conn:
+        # La instalacion inicial crea una universidad con AUTO_INCREMENT.
+        # No puede suponerse que su identificador sera siempre 1.
+        universidad_id = conn.execute(
+            text("SELECT id FROM universidad ORDER BY id LIMIT 1")
+        ).scalar()
+        if universidad_id is None:
+            raise HTTPException(
+                status_code=409,
+                detail="No existe ninguna universidad registrada. Inicializa los datos base antes de crear facultades."
+            )
+
         existente = conn.execute(
             text("""
                 SELECT id
                 FROM facultad
                 WHERE LOWER(nombre) = LOWER(:nombre)
-                  AND universidad_id = 1
+                  AND universidad_id = :universidad_id
             """),
-            {"nombre": nombre}
+            {"nombre": nombre, "universidad_id": universidad_id}
         ).first()
 
         if existente:
@@ -1410,9 +1434,9 @@ def crear_facultad(datos: dict, token: dict = Depends(solo_admin)):
         resultado = conn.execute(
             text("""
                 INSERT INTO facultad (universidad_id, nombre)
-                VALUES (1, :nombre)
+                VALUES (:universidad_id, :nombre)
             """),
-            {"nombre": nombre}
+            {"nombre": nombre, "universidad_id": universidad_id}
         )
 
         facultad_id = resultado.lastrowid
@@ -1558,14 +1582,43 @@ def generar_pdf_profesional(
             """)
         ).mappings().all()
 
-    return {
-        "estadisticas": dict(estadisticas),
-        "por_facultad": [
-            dict(f) for f in por_facultad
-        ],
-        "por_profesional": [
-            dict(p) for p in por_profesional
-        ],
-        "generado_en": datetime.now().isoformat(),
-        "generado_por": token["sub"]
-    }
+    # PDF real: el endpoint antes devolvia JSON pese a terminar en /pdf.
+    salida = BytesIO()
+    pdf = canvas.Canvas(salida, pagesize=A4)
+    ancho, alto = A4
+    y = alto - 55
+    pdf.setTitle("Mente Sana AQP - Reporte administrativo")
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawString(45, y, "Mente Sana AQP - Reporte administrativo")
+    y -= 23
+    pdf.setFont("Helvetica", 9)
+    pdf.drawString(45, y, "Generado: " + datetime.now().strftime("%d/%m/%Y %H:%M"))
+    y -= 33
+
+    def linea(texto, encabezado=False):
+        nonlocal y
+        if y < 55:
+            pdf.showPage()
+            y = alto - 55
+        pdf.setFont("Helvetica-Bold" if encabezado else "Helvetica", 10)
+        pdf.drawString(45, y, str(texto)[:100])
+        y -= 19
+
+    linea("Indicadores generales", True)
+    for clave, valor in dict(estadisticas).items():
+        linea(f"{clave.replace('_', ' ').capitalize()}: {valor}")
+    y -= 9
+    linea("Por facultad", True)
+    for f in por_facultad:
+        linea(f"{f['facultad']}: {f['evaluaciones']} evaluaciones, {f['evaluaciones_cerradas']} cerradas")
+    y -= 9
+    linea("Por profesional", True)
+    for p in por_profesional:
+        linea(f"{p['nombres']} {p['apellidos']}: {p['casos_asignados']} asignados, {p['casos_atendidos']} atendidos")
+    pdf.save()
+    salida.seek(0)
+    return StreamingResponse(
+        salida,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="reporte_administrativo.pdf"'},
+    )

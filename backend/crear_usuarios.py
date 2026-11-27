@@ -50,11 +50,17 @@ with engine.begin() as conn:
                 {"u": uid, "f": fac, "d": datetime.now()},
             )
         elif rol == "PROFESIONAL":
-            obtener_o_crear(
+            profesional_id = obtener_o_crear(
                 conn, "SELECT id FROM profesional WHERE usuario_id = :u", {"u": uid},
                 "INSERT INTO profesional (usuario_id, especialidad) VALUES (:u, 'Psicología clínica')",
                 {"u": uid},
             )
+            # La bandeja y los reportes requieren una facultad asignada.
+            conn.execute(text("""
+                INSERT INTO profesional_facultad (profesional_id, facultad_id)
+                VALUES (:p, :f)
+                ON DUPLICATE KEY UPDATE facultad_id = VALUES(facultad_id)
+            """), {"p": profesional_id, "f": fac})
 
 print("Listo. Usuarios de prueba (clave de todos:", CLAVE + "):")
 for _, correo, _, _ in demo:

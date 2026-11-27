@@ -1,4 +1,7 @@
-CREATE DATABASE  IF NOT EXISTS `sdtr` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+-- INSTALACION INICIAL: ejecutar solo en una base sdtr VACIA.
+-- Para no borrar datos existentes, no repetir la importacion sobre una base en uso.
+-- Los datos iniciales estan en seed.sql.
+CREATE DATABASE IF NOT EXISTS `sdtr` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 USE `sdtr`;
 -- MySQL dump 10.13  Distrib 26.7.0, for Win64 (x86_64)
 --
@@ -16,15 +19,6 @@ USE `sdtr`;
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-SET @MYSQLDUMP_TEMP_LOG_BIN = @@SESSION.SQL_LOG_BIN;
-SET @@SESSION.SQL_LOG_BIN= 0;
-
---
--- GTID state at the beginning of the backup 
---
-
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ 'd7018088-bac9-11f1-95bc-d843aea875cf:1-821';
-
 --
 -- Table structure for table `alerta`
 --
@@ -486,7 +480,7 @@ CREATE TABLE `registro_actividad` (
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `tg_actividad_no_update` BEFORE UPDATE ON `registro_actividad` FOR EACH ROW BEGIN
+/*!50003 CREATE*/ /*!50003 TRIGGER `tg_actividad_no_update` BEFORE UPDATE ON `registro_actividad` FOR EACH ROW BEGIN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'registro_actividad es de solo inserción';
 END */;;
 DELIMITER ;
@@ -503,7 +497,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `tg_actividad_no_delete` BEFORE DELETE ON `registro_actividad` FOR EACH ROW BEGIN
+/*!50003 CREATE*/ /*!50003 TRIGGER `tg_actividad_no_delete` BEFORE DELETE ON `registro_actividad` FOR EACH ROW BEGIN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'registro_actividad es de solo inserción';
 END */;;
 DELIMITER ;
@@ -721,12 +715,11 @@ CREATE TABLE `validacion_alerta` (
 /*!50001 SET character_set_results     = utf8mb4 */;
 /*!50001 SET collation_connection      = utf8mb4_0900_ai_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
+/*!50013 SQL SECURITY INVOKER */
 /*!50001 VIEW `v_riesgo_por_facultad` AS select `f`.`id` AS `facultad_id`,`f`.`nombre` AS `facultad`,cast(date_format(`e`.`fecha`,'%Y-%m-01') as date) AS `mes`,count(`e`.`id`) AS `evaluaciones`,sum((case when (`e`.`nivel_riesgo` = 'BAJO') then 1 else 0 end)) AS `riesgo_bajo`,sum((case when (`e`.`nivel_riesgo` = 'MEDIO') then 1 else 0 end)) AS `riesgo_medio`,sum((case when (`e`.`nivel_riesgo` = 'ALTO') then 1 else 0 end)) AS `riesgo_alto`,count(distinct `a`.`id`) AS `alertas` from (((`evaluacion` `e` join `estudiante` `s` on((`s`.`id` = `e`.`estudiante_id`))) join `facultad` `f` on((`f`.`id` = `s`.`facultad_id`))) left join `alerta` `a` on((`a`.`evaluacion_id` = `e`.`id`))) group by `f`.`id`,`f`.`nombre`,cast(date_format(`e`.`fecha`,'%Y-%m-01') as date) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
-SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

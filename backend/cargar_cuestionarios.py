@@ -28,8 +28,17 @@ GAD7 = [
 ]
 
 with engine.begin() as conn:
-    for codigo, items in (("PHQ9", PHQ9), ("GAD7", GAD7)):
+    for codigo, items, nombre, tipo, maximo in (
+        ("PHQ9", PHQ9, "Cuestionario de salud del paciente (PHQ-9)", "DEPRESION", 27),
+        ("GAD7", GAD7, "Escala de ansiedad generalizada (GAD-7)", "ANSIEDAD", 21),
+    ):
         ins = conn.execute(text("SELECT id FROM instrumento WHERE codigo = :c"), {"c": codigo}).scalar()
+        if ins is None:
+            ins = conn.execute(
+                text("""INSERT INTO instrumento (codigo, nombre, tipo, puntaje_maximo)
+                        VALUES (:c, :n, :t, :m)"""),
+                {"c": codigo, "n": nombre, "t": tipo, "m": maximo},
+            ).lastrowid
         if conn.execute(text("SELECT COUNT(*) FROM pregunta WHERE instrumento_id = :i"), {"i": ins}).scalar():
             print(codigo, "ya tenía preguntas, no se tocó")
             continue

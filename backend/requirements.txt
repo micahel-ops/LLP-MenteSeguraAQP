@@ -6,3 +6,5 @@ cryptography
 python-dotenv
 bcrypt
 pyjwt
+reportlab
+requests
