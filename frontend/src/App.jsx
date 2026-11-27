@@ -46,7 +46,7 @@ const MENU_ADMIN = [
   { texto: "Casos", ruta: "/admin/casos" },
   { texto: "Actividad", ruta: "/admin/actividad" },
   { texto: "Fuentes externas", ruta: "/admin/fuentes-externas" },
-  { texto: "Modelo NLP", ruta: "/admin/modelo-nlp" },
+  { texto: "Historial de resultados", ruta: "/estudiante/resultados" },
 ];
 
 export default function App() {
