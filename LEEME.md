@@ -1,5 +1,8 @@
 # Mente Sana AQP — proyecto completo (backend + frontend)
 
+> **Guía actualizada:** consultar primero [INICIAR_AQUI.md](INICIAR_AQUI.md).
+> Las instrucciones siguientes pertenecen a la estructura original y pueden estar desactualizadas.
+
 Usa tu MISMA base de datos MySQL `sdtr` (27 tablas) y tu MISMA estructura de carpetas
 (`sdtr/backend` y `sdtr/frontend`). No cambia ninguna tabla ni instala librerías nuevas.
 

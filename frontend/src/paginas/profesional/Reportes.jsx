@@ -58,7 +58,7 @@ async function descargarPdf() {
       <div className="cabecera">
         <div><h1>Reportes de mi facultad</h1><p className="suave">Resumen de atención psicológica - {datos.facultad}</p></div>
         <button className="btn" onClick={descargarPdf} disabled={descargando}>
-          {descargando ? "Generando PDF..." : "Exportar reporte (JasperReports)"}
+          {descargando ? "Generando PDF..." : "Exportar reporte PDF"}
         </button>
       </div>
 

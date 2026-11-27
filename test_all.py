@@ -1,9 +1,9 @@
 import requests
 
-BASE = "http://127.0.0.1:8001"
+BASE = "http://127.0.0.1:8000/api"
 
 # Login as admin
-r = requests.post(f"{BASE}/api/login", json={"correo": "admin@demo.pe", "contrasena": "Demo2026!"})
+r = requests.post(f"{BASE}/login", json={"correo": "admin@demo.pe", "contrasena": "Demo2026!"})
 print("Admin login:", r.status_code, r.json())
 token = r.json()["token"]
 headers = {"Authorization": f"Bearer {token}"}
@@ -22,7 +22,7 @@ for endpoint in ["/admin/panel", "/admin/casos", "/admin/actividad", "/admin/usu
         print(f"  -> {r.text[:200]}")
 
 # Login as professional
-r = requests.post(f"{BASE}/api/login", json={"correo": "profesional@demo.pe", "contrasena": "Demo2026!"})
+r = requests.post(f"{BASE}/login", json={"correo": "profesional@demo.pe", "contrasena": "Demo2026!"})
 print("\nProf login:", r.status_code)
 prof_token = r.json()["token"]
 prof_headers = {"Authorization": f"Bearer {prof_token}"}
@@ -41,5 +41,5 @@ for endpoint in ["/profesional/estudiantes", "/reportes/facultad", "/alertas"]:
         print(f"  -> {r.text[:200]}")
 
 # Login as student
-r = requests.post(f"{BASE}/api/login", json={"correo": "estudiante@demo.pe", "contrasena": "Demo2026!"})
+r = requests.post(f"{BASE}/login", json={"correo": "estudiante@demo.pe", "contrasena": "Demo2026!"})
 print("\nStudent login:", r.status_code)

@@ -143,9 +143,9 @@ export default function ModeloNLP() {
                 <label htmlFor="m-estado">Estado *</label>
                 <select id="m-estado" value={estado} onChange={(e) => setEstado(e.target.value)}>
                   <option value="VIGENTE">VIGENTE (En uso)</option>
-                  <option value="DEPRECADOS">DEPRECADOS (Histórico)</option>
+                  <option value="RETIRADA">RETIRADA (Histórico)</option>
                 </select>
-                <span className="nota">Al marcar como VIGENTE, el modelo anterior pasará a estado DEPRECADOS automáticamente.</span>
+                <span className="nota">Al marcar como VIGENTE, el modelo anterior pasará a estado RETIRADA automáticamente.</span>
               </div>
 
               <div className="campo" style={{ marginBottom: 16 }}>

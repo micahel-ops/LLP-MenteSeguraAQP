@@ -1,0 +1,54 @@
+# Demo local. No introducir datos reales ni publicar los puertos en Internet.
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: sdtr
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_demo_local_2026}
+      MYSQL_USER: mente_sana
+      MYSQL_PASSWORD: ${DB_PASSWORD:-mente_sana_demo_2026}
+    volumes:
+      - datos_mysql:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 25s
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_USER: mente_sana
+      DB_PASSWORD: ${DB_PASSWORD:-mente_sana_demo_2026}
+      DB_NAME: sdtr
+      JWT_SECRET: ${JWT_SECRET:-clave_docker_demo_2026_no_publicar}
+    command:
+      - sh
+      - -c
+      - >-
+        python crear_usuarios.py &&
+        python cargar_cuestionarios.py &&
+        python -m uvicorn main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:5173:5173"
+    restart: unless-stopped
+
+volumes:
+  datos_mysql:
